@@ -74,7 +74,7 @@ def getFollower(author: User, follower_id: str) -> Author:
 
 
 class FollowerDetails(APIView):
-    def get(self, request: HttpRequest, author_id: str, foreign_author_id: str = None):
+    def get(self, request: Request, author_id: str, foreign_author_id: str = None):
         author = getAuthor(author_id)
         if not author:
             return HttpResponseNotFound("Database could not find author")
