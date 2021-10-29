@@ -3,7 +3,6 @@ psycopg2
 
 # Django
 django
-<<<<<<< HEAD
 
 
 # Rest framework
