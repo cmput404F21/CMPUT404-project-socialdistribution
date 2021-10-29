@@ -13,3 +13,7 @@ class User(AbstractUser):
     url = models.URLField(editable=False)
     followers = models.ManyToManyField('self', related_name='follower', blank=True, symmetrical=False)
     githubUrl = models.URLField(max_length=200, blank=True)
+    
+    def get_author_id(self):
+        return "http://localhost:8000/service/author/"+ str(self.id) + "/"
+

@@ -32,6 +32,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'rest_framework', # For doing serializer and handling requests
     'apps.core',
     'apps.posts',
     'django.contrib.admin',
@@ -42,6 +43,10 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
 ]
+
+REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': 'socialdistribution.pagination.CustomPagination',
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
