@@ -29,7 +29,29 @@
             {% endif %}
         </div>
     {% endif %}
-
+    {% if userAuthor and userAuthor.github %}
+    <script>
+        githubUser = '{{userAuthor.github}}';
+        var user;
+        var i=githubUser.length-1;
+        for(;i>=0;i--){
+            if(githubUser[i]==='/'){
+                break;
+            }
+        }
+        username = githubUser.substring(i+1);
+        console.log(username);
+        url = "https://api.github.com/users/" + username+"/events";
+        fetch(url,{method: 'GET'
+        })
+        .then(function(response){
+            return response.json();
+        })
+        .then(function(data){
+            console.log(data);
+        })
+    </script>
+    {% endif %}
     {% if posts %}
         {% for post in posts %}
             <div class="post" post-id="{{post.id}}" author-id="{{post.author.id}}">
