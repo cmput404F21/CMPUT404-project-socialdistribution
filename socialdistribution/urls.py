@@ -36,7 +36,7 @@ schema_view = get_schema_view(
 urlpatterns = [
     path('author/<path:author_id>/inbox', include('apis.inbox.urls')),
     path('author/<path:author_id>/posts/', include('apis.posts.urls')),
-    path('author/<path:author_id>/', include('apis.likes.urls')),
+    path('author/<str:author_id>/', include('apis.likes.urls')),
     path('admin/', admin.site.urls),
     path('site/posts/', include('apps.posts.urls')),
     # path('site/accounts/', include('django.contrib.auth.urls')), #this handles user authentication
