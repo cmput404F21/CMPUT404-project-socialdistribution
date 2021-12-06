@@ -81,10 +81,10 @@
                                             return response.json();
                                         })
                                         .then(function(data){
-                                            if(data.id==='{{ author.id }}'){
+                                            if(data.id==='{{ userAuthor.id }}'){
                                                 option = document.createElement("option");
                                                 option.value = follower.displayName;
-                                                option.innerHTML = followers.displayName;
+                                                option.innerHTML = follower.displayName;
                                                 map.set(option.value,follower);
                                                 authorDropDown.appendChild(option);
                                             }

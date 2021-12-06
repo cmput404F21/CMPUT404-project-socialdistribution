@@ -94,7 +94,6 @@
         .then(function(data) {
             post.id = data.data.id;
             post.comments=post.id+'/comments'
-            
             postString = JSON.stringify(post);
             return fetch(post.id+'/',{
                 method: 'POST',
@@ -121,6 +120,7 @@
         .then(function(data){
             if(post.unlisted===false){
                 followersInJson = data["data"];
+                //console.log(followersInJson);
                 if(post.visibility === "FRIENDS"){
                     for(let follower of followersInJson){
                         var urlToCheckIfFollowsBack = '{{host}}'+"/author/" + follower.id +'/followers/'+'{{ author.id }}';
