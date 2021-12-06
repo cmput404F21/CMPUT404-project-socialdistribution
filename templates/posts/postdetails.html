@@ -43,6 +43,72 @@
                             <a href="{{host}}/site/posts/editpost/{{post.id}}"><button type="button" class="btn">Edit post</button></a>
                             <a href="{{host}}/site/posts/deletepost/{{post.id}}"><button type="button" class="btn" onclick="return confirm('Are you sure?');">Delete post</button></a>
                         {% endif %}
+                        {% if userAuthor %}
+                        <select id="sharedropdown">
+                            <option value="" selected disabled hidden>Choose here</option>
+                        </select>
+                        <button type="button" class="btn" id="sharepostbtn">Share Post</button>
+                        <script>
+                            var authorDropDown = document.getElementById("sharedropdown");
+                            var author;
+                            var url;
+                            var map = new Map();
+                            if('{{post.visibility}}'==='FRIENDS'){
+                                url = '{{host}}' + '/author/'+ '{{ userAuthor.id }}' + '/followers';
+                                fetch(url,{
+                                    method: 'GET',
+                                    headers: {
+                                        'Content-Type' : 'application/json',
+                                        'X-CSRFToken' : "{{ csrf_token }}"
+                                    } 
+                                })
+                                .then(function(response){
+                                    return response.json();
+                                })
+                                .then(function(data){
+                                    followersInJson = data["data"];
+                                    for(let follower of followersInJson){
+                                        var urlToCheckIfFollowsBack = '{{host}}'+"/author/" + follower.id +'/followers/'+'{{ userAuthor.id }}';
+                                        fetch(urlToCheckIfFollowsBack,{
+                                            method: 'GET',
+                                            headers: {
+                                            'Content-Type' : 'application/json',
+                                            'X-CSRFToken' : "{{ csrf_token }}"
+                                            }, 
+                                        })
+                                        .then(function(response){
+                                            return response.json();
+                                        })
+                                        .then(function(data){
+                                            if(data.id==='{{ author.id }}'){
+                                                option = document.createElement("option");
+                                                option.value = follower.displayName;
+                                                map.set(option.value,follower);
+                                                authorDropDown.appendChild(option);
+                                        }
+                                    })
+                                }
+                            })
+                        }
+                        else{
+                            url = '{{host}}'+'/authors';
+                            fetch(url,{
+                                method: 'GET',
+                                headers: {
+                                'Content-Type' : 'application/json',
+                                'X-CSRFToken' : "{{ csrf_token }}"
+                                }, 
+                            })
+                            .then(function(response){
+                                return response.json();
+                            })
+                            .then(function(data){
+                                
+                            })
+                        }
+                            
+                        </script>
+                        {% endif %}
                     </div>
                 </div>
             </div>
