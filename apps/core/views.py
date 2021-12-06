@@ -106,7 +106,7 @@ def author(request: HttpRequest, author_id: str):
     host = Utils.getRequestHost(request)
     currentAuthor=Author.objects.filter(userId=request.user).first()
 
-    if request.user.is_anonymous:
+    if request.user.is_anonymous or not (request.user.is_authenticated):
         return render(request,'core/index.html')
     
     is_following = False
