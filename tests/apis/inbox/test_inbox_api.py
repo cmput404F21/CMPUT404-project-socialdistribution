@@ -75,14 +75,18 @@ class InboxViewTests(TestCase):
             },
         }
 
-        response = self.client.post(reverse('likes_api:inbox_like', kwargs={'author_id':author.id}), data, format="json")
-        self.assertEqual(response.status_code, 201, f"expected 201. got: {response.status_code}")
-        like_data = json.loads(response.content)["data"]
+        # we decided that inbox call for like should create the like
+        # response = self.client.post(reverse('likes_api:inbox_like', kwargs={'author_id':author.id}), data, format="json")
+        # self.assertEqual(response.status_code, 201, f"expected 201. got: {response.status_code}")
+        # like_data = json.loads(response.content)["data"]
         
-        self.assertEqual(postId, like_data["object"], "returned item referenced wrong object!")
-        self.assertEqual(like_data["author"]["id"], str(author2.id), "returned item referenced wrong author!")
+        # self.assertEqual(postId, like_data["object"], "returned item referenced wrong object!")
+        # self.assertEqual(like_data["author"]["id"], str(author2.id), "returned item referenced wrong author!")
 
+        like_data = data
+        like_data["type"] = InboxItem.ItemTypeEnum.LIKE
         response = self.client.post(reverse('inbox_api:inbox', kwargs={'author_id':author.id}), like_data, format="json")
+        # print(response.content)
         self.assertEqual(response.status_code, 201, f"expected 201. got: {response.status_code}")
         dict_resp_data = json.loads(response.content)["data"]
 
@@ -201,11 +205,16 @@ class InboxViewTests(TestCase):
             },
         }
 
-        response = self.client.post(reverse('likes_api:inbox_like', kwargs={'author_id':author.id}), data, format="json")
-        self.assertEqual(response.status_code, 201, f"expected 201. got: {response.status_code}")
-        like_data = json.loads(response.content)["data"]
+        like_data = data
+        like_data["type"] = InboxItem.ItemTypeEnum.LIKE
+
+        # we decided that inbox call for like should create the like
+        # response = self.client.post(reverse('likes_api:inbox_like', kwargs={'author_id':author.id}), data, format="json")
+        # self.assertEqual(response.status_code, 201, f"expected 201. got: {response.status_code}")
+        # like_data = json.loads(response.content)["data"]
         
         response = self.client.post(reverse('inbox_api:inbox', kwargs={'author_id':author.id}), like_data, format="json")
+        # print(response.content)
         self.assertEqual(response.status_code, 201, f"expected 201. got: {response.status_code}")
 
         response = self.client.put(reverse('author:follower-info', kwargs={'author_id':author.id, 'foreign_author_id':author2.id}), format="json")
@@ -329,14 +338,19 @@ class InboxViewTests(TestCase):
             },
         }
 
-        response = self.client.post(reverse('likes_api:inbox_like', kwargs={'author_id':author.id}), data, format="json")
-        self.assertEqual(response.status_code, 201, f"expected 201. got: {response.status_code}")
-        like_data = json.loads(response.content)["data"]
+        like_data = data
+        like_data["type"] = InboxItem.ItemTypeEnum.LIKE
+
+        # we decided that inbox call for like should create the like
+        # response = self.client.post(reverse('likes_api:inbox_like', kwargs={'author_id':author.id}), data, format="json")
+        # self.assertEqual(response.status_code, 201, f"expected 201. got: {response.status_code}")
+        # like_data = json.loads(response.content)["data"]
         
-        self.assertEqual(postId, like_data["object"], "returned item referenced wrong object!")
-        self.assertEqual(like_data["author"]["id"], str(author2.id), "returned item referenced wrong author!")
+        # self.assertEqual(postId, like_data["object"], "returned item referenced wrong object!")
+        # self.assertEqual(like_data["author"]["id"], str(author2.id), "returned item referenced wrong author!")
 
         response = self.client.post(reverse('inbox_api:inbox', kwargs={'author_id':author.id}), like_data, format="json")
+        # print(response.content)
         self.assertEqual(response.status_code, 201, f"expected 201. got: {response.status_code}")
         dict_resp_data = json.loads(response.content)["data"]
 
@@ -355,7 +369,7 @@ class InboxViewTests(TestCase):
             },
         }
 
-        response = self.client.post(reverse('inbox_api:inbox', kwargs={'author_id':author.id}), follow_data, format="json")
+        response = self.client.post(reverse('inbox_api:inbox', kwargs={'author_id':author2.id}), follow_data, format="json")
         self.assertEqual(response.status_code, 201, f"expected 201. got: {response.status_code}")
 
     def test_post_inbox_access_levels(self):
@@ -428,9 +442,13 @@ class InboxViewTests(TestCase):
             },
         }
 
-        response = self.client.post(reverse('likes_api:inbox_like', kwargs={'author_id':author.id}), data, format="json")
-        self.assertEqual(response.status_code, 201, f"expected 201. got: {response.status_code}")
-        like_data = json.loads(response.content)["data"]
+        like_data = data
+        like_data["type"] = InboxItem.ItemTypeEnum.LIKE
+
+        # we decided that inbox call for like should create the like
+        # response = self.client.post(reverse('likes_api:inbox_like', kwargs={'author_id':author.id}), data, format="json")
+        # self.assertEqual(response.status_code, 201, f"expected 201. got: {response.status_code}")
+        # like_data = json.loads(response.content)["data"]
         
         # test anonymous user
         self.client.logout()
@@ -451,12 +469,14 @@ class InboxViewTests(TestCase):
         self.client.logout()
         self.assertTrue(self.client.login(username=user2.username, password=password))
         response = self.client.post(reverse('inbox_api:inbox', kwargs={'author_id':author.id}), like_data, format="json")
+        # print(response.content)
         self.assertEqual(response.status_code, 201, f"expected 201. got: {response.status_code}")
         # test admin
         self.client.logout()
         self.auth_helper.authorize_client(self.client)
         response = self.client.post(reverse('inbox_api:inbox', kwargs={'author_id':author.id}), like_data, format="json")
-        self.assertEqual(response.status_code, 201, f"expected 201. got: {response.status_code}")
+        # technically this like has been given already so no effect, returns 204
+        self.assertEqual(response.status_code, 204, f"expected 204. got: {response.status_code}")
 
         self.client.logout()
         self.auth_helper.authorize_client(self.client)
@@ -477,27 +497,28 @@ class InboxViewTests(TestCase):
 
         # test anonymous user
         self.client.logout()
-        response = self.client.post(reverse('inbox_api:inbox', kwargs={'author_id':author.id}), follow_data, format="json")
+        response = self.client.post(reverse('inbox_api:inbox', kwargs={'author_id':author2.id}), follow_data, format="json")
         self.assertEqual(response.status_code, 401, f"expected 401. got: {response.status_code}")
         # test non participant
         self.client.logout()
         self.assertTrue(self.client.login(username=nonParticipant.username, password=password))
-        response = self.client.post(reverse('inbox_api:inbox', kwargs={'author_id':author.id}), follow_data, format="json")
+        response = self.client.post(reverse('inbox_api:inbox', kwargs={'author_id':author2.id}), follow_data, format="json")
         self.assertEqual(response.status_code, 403, f"expected 403. got: {response.status_code}")
         # test followee
         self.client.logout()
         self.assertTrue(self.client.login(username=user2.username, password=password))
-        response = self.client.post(reverse('inbox_api:inbox', kwargs={'author_id':author.id}), follow_data, format="json")
+        response = self.client.post(reverse('inbox_api:inbox', kwargs={'author_id':author2.id}), follow_data, format="json")
         self.assertEqual(response.status_code, 403, f"expected 403. got: {response.status_code}")
         # test follower
         self.client.logout()
         self.assertTrue(self.client.login(username=user.username, password=password))
-        response = self.client.post(reverse('inbox_api:inbox', kwargs={'author_id':author.id}), follow_data, format="json")
+        response = self.client.post(reverse('inbox_api:inbox', kwargs={'author_id':author2.id}), follow_data, format="json")
         self.assertEqual(response.status_code, 201, f"expected 201. got: {response.status_code}")
         # test admin
         self.client.logout()
         self.auth_helper.authorize_client(self.client)
-        response = self.client.post(reverse('inbox_api:inbox', kwargs={'author_id':author.id}), follow_data, format="json")
+        response = self.client.post(reverse('inbox_api:inbox', kwargs={'author_id':author2.id}), follow_data, format="json")
+        # print(response.content)
         self.assertEqual(response.status_code, 201, f"expected 201. got: {response.status_code}")
 
     def test_post_inbox_overwrite(self):

@@ -244,11 +244,13 @@ class FollowerDetails(GenericAPIView):
 
         author_host = Utils.getUrlHost(author_id)
         remoteUrl = None
-        if (author_host != host):
-            remoteUrl = author_id + "/followers/" + foreign_author_id
+        if (not foreign_author_id):
+            return HttpResponseBadRequest("foreign_author_id is required")
 
-        foreign_author_id = Utils.cleanAuthorId(foreign_author_id, host)
-
+        if (author_host and author_host != host):
+            clean_id = Utils.getAuthorId(foreign_author_id)
+            remoteUrl = author_id + "/followers/" + (clean_id if clean_id else foreign_author_id)
+        
         author: dict = Utils.getAuthorDict(author_id, host)
         if not author:
             return HttpResponseNotFound("Could not find author")
@@ -261,18 +263,17 @@ class FollowerDetails(GenericAPIView):
         if (not request.user.is_staff and not currentAuthor.isServer):
             if (currentAuthor.id != foreign_author_id):
                 return HttpResponseForbidden("You are not allowed to delete this follower from this author")
-        
-        follow.delete()
 
         detail = "id {} successfully removed locally".format(foreign_author_id)
-
         if (remoteUrl):
             try:
                 Utils.deleteFromUrl(remoteUrl)
                 detail += " and remotely"
             except:
-                detail += " but not remotely"
+                detail += "id {} could not be removed remotely".format(foreign_author_id)
+                return Response({"detail": detail}, status=412)
 
+        follow.delete()
         return Response({"detail": detail}, status=204)
 
     def put(self, request: HttpRequest, author_id: str, foreign_author_id: str):
