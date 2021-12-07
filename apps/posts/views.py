@@ -164,6 +164,15 @@ def editpost(request: HttpRequest, post_id: str):
     context = {'author' : currentAuthor, 'post': post, 'host':host}
     return render(request,'posts/editpost.html',context)
 
+def github(request: HttpRequest):
+    if request.user.is_anonymous or not (request.user.is_authenticated):
+        return render(request,'posts/my_github_feed.html')
+
+    currentAuthor=Author.objects.filter(userId=request.user).first()
+    host = Utils.getRequestHost(request)
+    context = {'userAuthor' : currentAuthor, 'host':host}
+    return render(request,'posts/my_github_feed.html',context)
+
 def deletepost(request: HttpRequest, post_id: str):
     if request.user.is_anonymous or not (request.user.is_authenticated):
         return render(request,'posts/index.html')

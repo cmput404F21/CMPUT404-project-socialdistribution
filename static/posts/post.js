@@ -40,7 +40,7 @@ $(document).ready(function() {
         };
     });
 });
-
+// calls inbox api to send a like object about a post
 async function likePost(postId, authorOfPostId, userAuthorId) {
     let like = new Object();
     
@@ -90,7 +90,7 @@ async function likePost(postId, authorOfPostId, userAuthorId) {
         });
     });
 }
-
+// calls comments API in order to post new comment string
 async function commentPost(commentText, postId, authorOfPostId, userAuthorId) {
     if (commentText != null) {
         let comment = new Object();
