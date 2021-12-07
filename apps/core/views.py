@@ -145,7 +145,7 @@ def author(request: HttpRequest, author_id: str):
     host = Utils.getRequestHost(request)
     currentAuthor=Author.objects.filter(userId=request.user).first()
 
-    if request.user.is_anonymous:
+    if request.user.is_anonymous or not (request.user.is_authenticated):
         return Utils.defaultRender(request,'core/index.html')
     
     target_id = Utils.cleanAuthorId(author_id, host)
