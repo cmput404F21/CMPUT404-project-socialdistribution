@@ -2,6 +2,7 @@ var encodedFile;
 var getAuthorUrl;
 var targetAuthor;
 
+// base 64 encodes file so it can be sent to database
 function getBase64(file, onLoadCallback) {
     return new Promise(function(resolve, reject) {
         var reader = new FileReader();
@@ -10,7 +11,7 @@ function getBase64(file, onLoadCallback) {
         reader.readAsDataURL(file);
     });
 }
-
+// sendsa http request defined by the following parameters to the server
 function sendMessage(postUrl, postString = undefined, method = 'post'){
     return new Promise((resolve) => {
         fetch(postUrl,{
@@ -31,7 +32,7 @@ function sendMessage(postUrl, postString = undefined, method = 'post'){
         });
     }) 
 }
-
+// creates author object
 function buildAuthor(){
     var displayName = document.getElementById("displayName").value;
     var github = document.getElementById("github").value;
@@ -71,7 +72,7 @@ function refresh(author){
         }
     }
 }
-
+// add ability to edit various objects
 function toggleEditting(editing){
     var displayClass = "displaying"
     var editClass = "editing"

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+
+{% block content %}
+    {% if user.is_authenticated and userAuthor and userAuthor.github %}
+    <ul id="githubposts"></ul>
+    <script>
+        githubUser = '{{userAuthor.github}}';
+        var user;
+        var list = document.getElementById("githubposts");
+        var i=githubUser.length-1;
+        for(;i>=0;i--){
+            if(githubUser[i]==='/'){
+                break;
+            }
+        }
+        username = githubUser.substring(i+1);
+        url = "https://api.github.com/users/" + username+"/events";
+        fetch(url,{method: 'GET'
+        })
+        .then(function(response){
+            return response.json();
+        })
+        .then(function(data){
+            console.log(data);
+            for(let post of data){
+                h1 = document.createElement("h1");
+                h1.textContent = "Type: " + post.type;
+                li = document.createElement("li");
+                li.textContent = "By " + post.actor.login + " at " +post.created_at + " on the repo: " + post.repo.name;
+                list.appendChild(h1);
+                list.appendChild(li);
+            }
+        })
+    </script>
+    {% else %}
+    <p>No posts are available.</p>
+    {% endif %}
+{% endblock %}

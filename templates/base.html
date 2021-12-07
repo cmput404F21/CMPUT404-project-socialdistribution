@@ -87,7 +87,7 @@ This will contain the wrapper that all other templates exist within
                     </li>
                     {% if user.is_authenticated and user.get_author_github %}
                     <li>
-                        <a href="{{ user.get_author_github }}">My Github</a>
+                        <a href="{{host}}/site/posts/my_github_feed">My Github Feed</a>
                     </li>
                     {% endif %}
                 </ul>
