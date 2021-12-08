@@ -1,6 +1,7 @@
 var encodedFile;
 var getAuthorUrl;
 var targetAuthor;
+var author;
 
 // base 64 encodes file so it can be sent to database
 function getBase64(file, onLoadCallback) {
@@ -40,14 +41,19 @@ function buildAuthor(){
     targetAuthor.github = github;
     targetAuthor.profileImage = encodedFile;
 
-    if (is_staff){
-        var isApproved = document.getElementById("isApproved").checked;
-        targetAuthor.isApproved = isApproved;
+    if (is_staff && host == target_host){
+        if (requireApproval){
+            var isApproved = document.getElementById("isApproved").checked;
+            targetAuthor.isApproved = isApproved;
+        }
+        var isServer = document.getElementById("isServer").checked;
+        targetAuthor.isServer = isServer;
     }
 }
 
-function refresh(author){
-    targetAuthor = author;
+function init(){
+    author = JSON.parse(document.getElementById('author').textContent);
+    targetAuthor = JSON.parse(document.getElementById('target_author').textContent);
     encodedFile = targetAuthor.profileImage;
     document.getElementById("displayName").value = targetAuthor.displayName;
     document.getElementById("github").value = targetAuthor.github;
@@ -63,11 +69,14 @@ function refresh(author){
         document.getElementById("friend").innerText = friendStatus;
     }
 
-    if (is_staff){
-        document.getElementById("isApproved").checked = targetAuthor.isAdmin || targetAuthor.isApproved
+    if (is_staff && host == target_host){
+        if (requireApproval){
+            document.getElementById("isApproved").checked = targetAuthor.isAdmin || targetAuthor.isApproved
+        }
+        document.getElementById("isServer").checked = targetAuthor.isServer
         document.getElementById("isAdmin").innerText = targetAuthor.isAdmin ? "True" : "False";
 
-        if (targetAuthor.isAdmin){
+        if (targetAuthor.isAdmin || !requireApproval){
             document.getElementById("isApprovedSection").className = "hidden"
         }
     }
@@ -83,9 +92,11 @@ function toggleEditting(editing){
         editClass += " hidden"
     }
 
-    if (is_staff){
+    if (is_staff && host == target_host){
         var isApprovedEl = document.getElementById("isApproved");
         isApprovedEl.disabled = editing ? false : true;
+        var isServerEl = document.getElementById("isServer");
+        isServerEl.disabled = editing ? false : true;
     }
 
     var displayElements = document.getElementsByClassName('displaying');
@@ -104,12 +115,7 @@ function toggleEditting(editing){
 }
 
 $(document).ready(function() {
-    targetAuthorUrl = host+'/author/'+target_author_id;
-    sendMessage(targetAuthorUrl, undefined, "get").then(function(response){
-        if (response){
-            refresh(response);
-        }
-    });
+    init();
 
     document.getElementById("profileImageFile").onchange = function() {
         var file = document.getElementById("profileImageFile").files[0];
@@ -122,12 +128,13 @@ $(document).ready(function() {
         });
     };
     
+    targetAuthorUrl = host+'/author/'+target_author_id;
     document.getElementById("submitbutton").onclick = function(){
         buildAuthor();
         var postString = JSON.stringify(targetAuthor);
         sendMessage(targetAuthorUrl, postString).then(function(response){
             if (response){
-                refresh(response);
+                location.reload()
             }
         });
         toggleEditting(false);
@@ -140,13 +147,19 @@ $(document).ready(function() {
     }
 
     if (author_id != target_author_id){
-        followUrl = host+'/author/'+encodeURIComponent(target_author_id)+"/followers/"+encodeURIComponent(author_id);
         document.getElementById("followbutton").onclick = function(){
             if (is_following){
+                followUrl = host+'/author/'+encodeURIComponent(target_author_id)+"/followers/"+encodeURIComponent(author_id);
                 sendMessage(followUrl, undefined, "delete");
             }
             else{
-                sendMessage(followUrl, undefined, "put");
+                followUrl = host+'/author/'+encodeURIComponent(target_author_id)+"/inbox";
+                follow = {
+                    type: "follow",
+                    actor: author,
+                    object: targetAuthor
+                }
+                sendMessage(followUrl, JSON.stringify(follow), "post");
             }
             
             is_following = is_following ? false : true

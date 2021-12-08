@@ -2,6 +2,7 @@
 # https://www.django-rest-framework.org/tutorial/3-class-based-views/
 
 import re
+import uuid
 from django.http import JsonResponse
 from django.http.request import HttpRequest
 from django.http.response import HttpResponseBadRequest, HttpResponseNotFound, Http404
@@ -124,13 +125,10 @@ class posts(GenericAPIView):
         except:
             raise Http404()
 
-    def get_host(self, request):
-        return request.scheme + "://" + request.get_host()
-
     # GET get recent posts of author (paginated)
     def get(self, request: HttpRequest, author_id: str):
         author = self.get_author(author_id)
-        host = self.get_host(request)
+        host = Utils.getRequestHost(request)
 
         # filter out only posts by given author and paginate
         queryset = Post.objects.filter(author=author.id)
@@ -147,7 +145,7 @@ class posts(GenericAPIView):
     def post(self, request: HttpRequest, author_id: str):
         # validate given author_id
         author = self.get_author(author_id)
-        host = self.get_host(request)
+        host = Utils.getRequestHost(request)
         #data = JSONParser().parse(request)
         data = request.data
         serializer = self.get_serializer(data=data)
@@ -165,12 +163,25 @@ class posts(GenericAPIView):
             return Response(formatted_data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-def create_comment(sender_id, post_id, serializer: CommentSerializer):
+def create_or_get_comment(sender_id, post_id, serializer: CommentSerializer, comment_id = None):
     if (serializer.is_valid()):
+        if (not comment_id):
+            comment_id = str(uuid.uuid4())
+        else:
+            comments = Comment.objects.filter(pk=comment_id)
+            if (comments.exists()):
+                return comments.first()
+
         comment = Comment.objects.create(
+            id = comment_id,
             author_id=sender_id,
-            post_id=post_id,
-            **serializer.validated_data)
+            post_id=post_id, **serializer.validated_data)
+
+        # if serializer.data.__contains__("contentType"):
+        #     comment.content_type = serializer.data["contentType"] 
+
+        # if serializer.data.__contains__("comment"):
+        #     comment.comment = serializer.data["comment"] 
 
         comment.save()
         return comment
@@ -205,6 +216,7 @@ class comments(GenericAPIView):
         except:
             return HttpResponseNotFound()
         data = JSONParser().parse(request.data) if request.data is str else request.data
+        # print(data)
 
         if (not data.__contains__("author") or not data["author"].__contains__("id")):
             # this is the problem
@@ -219,7 +231,7 @@ class comments(GenericAPIView):
             host = request.scheme + "://" + request.get_host()
             serializer = CommentSerializer(data=data)
             if (serializer.is_valid()):
-                comment = create_comment(sender["id"], post_id, serializer)
+                comment = create_or_get_comment(sender["id"], post_id, serializer)
                 serializer = CommentSerializer(comment, context={'host': host})
                 formatted_data = Utils.formatResponse(query_type="POST on comments", data=serializer.data)
                 return Response(formatted_data, status=status.HTTP_201_CREATED)

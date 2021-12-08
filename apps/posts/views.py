@@ -1,5 +1,5 @@
 from django.core.exceptions import MultipleObjectsReturned
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import redirect, get_object_or_404
 from django.http.request import HttpRequest
 from django.core.paginator import Paginator
 from django.urls.base import reverse
@@ -52,11 +52,11 @@ def index(request: HttpRequest):
         'request_size': request_size
         }
 
-    return render(request, 'posts/index.html', context)
+    return Utils.defaultRender(request, 'posts/index.html', context)
 
 def friend_posts(request: HttpRequest):
     if request.user.is_anonymous:
-        return render(request,'core/index.html')
+        return Utils.defaultRender(request,'core/index.html')
 
     currentAuthor = Author.objects.filter(userId=request.user).first()
 
@@ -129,7 +129,7 @@ def friend_posts(request: HttpRequest):
         'request_size': request_size
         }
 
-    return render(request, 'posts/index.html', context)
+    return Utils.defaultRender(request, 'posts/index.html', context)
 
 def get_published(elem):
     print("elem", elem.published)
@@ -137,7 +137,7 @@ def get_published(elem):
 
 def my_posts(request: HttpRequest):
     if request.user.is_anonymous or not (request.user.is_authenticated):
-        return render(request,'posts/index.html')
+        return Utils.defaultRender(request,'posts/index.html')
 
     currentAuthor = Author.objects.get(userId=request.user)
     posts = Post.objects.filter(author=currentAuthor)
@@ -169,7 +169,7 @@ def my_posts(request: HttpRequest):
         post.comments_top3 = comments
         post.num_likes = len(get_likes_post(post.id))
 
-    host = request.scheme + "://" + request.get_host()
+    host = Utils.getRequestHost(request)
     context = {
         'posts': posts_page,
         'host': host,
@@ -178,24 +178,24 @@ def my_posts(request: HttpRequest):
         'request_prev_page': prev_page,
         'request_prev_page_link': abs_path_no_query + "?page=" + str(prev_page) + "&size=" + str(request_size),
         'request_size': request_size,
-        'userAuthor': currentAuthor
+        'user_author': currentAuthor
         }
-    return render(request, 'posts/index.html', context)
+    return Utils.defaultRender(request, 'posts/index.html', context)
 
 
 
 def makepost(request: HttpRequest):
     if request.user.is_anonymous or not (request.user.is_authenticated):
-        return render(request,'posts/makepost.html')
+        return Utils.defaultRender(request,'posts/makepost.html')
 
     currentAuthor = Author.objects.filter(userId=request.user).first()
     host = request.scheme + "://" + request.get_host()
     context = {'author' : currentAuthor, 'host' : host}
-    return render(request,'posts/makepost.html',context)
+    return Utils.defaultRender(request,'posts/makepost.html',context)
 
 def postdetails(request: HttpRequest, post_id):
     if request.user.is_anonymous:
-        return render(request,'core/index.html')
+        return Utils.defaultRender(request,'core/index.html')
 
     currentAuthor = Author.objects.get(userId=request.user)
     host = Utils.getRequestHost(request)
@@ -254,18 +254,18 @@ def postdetails(request: HttpRequest, post_id):
         'request_size': request_size,
         'userAuthor': currentAuthor
         }
-    return render(request, 'posts/postdetails.html', context)
+    return Utils.defaultRender(request, 'posts/postdetails.html', context)
 
 
 def editpost(request: HttpRequest, post_id: str):
     if request.user.is_anonymous or not (request.user.is_authenticated):
-        return render(request,'posts/editpost.html')
+        return Utils.defaultRender(request,'posts/editpost.html')
 
     currentAuthor=Author.objects.filter(userId=request.user).first()
     post = Post.objects.get(pk=post_id)
     host = request.scheme + "://" + request.get_host()
     context = {'author' : currentAuthor, 'post': post, 'host':host}
-    return render(request,'posts/editpost.html',context)
+    return Utils.defaultRender(request,'posts/editpost.html',context)
 
 def github(request: HttpRequest):
     if request.user.is_anonymous or not (request.user.is_authenticated):
@@ -278,7 +278,7 @@ def github(request: HttpRequest):
 
 def deletepost(request: HttpRequest, post_id: str):
     if request.user.is_anonymous or not (request.user.is_authenticated):
-        return render(request,'posts/index.html')
+        return Utils.defaultRender(request,'posts/index.html')
     currentAuthor=Author.objects.filter(userId=request.user).first()
     post = Post.objects.get(pk=post_id)
     if post.author.id == currentAuthor.id:

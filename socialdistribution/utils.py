@@ -1,14 +1,15 @@
 from re import search
 from django.http.request import HttpRequest
-from django.http.response import Http404, HttpResponse
+from django.http.response import Http404
 from requests.models import HTTPBasicAuth, Response
 from rest_framework.renderers import JSONRenderer
-from apps.core.models import Author, ExternalHost
+from apps.core.models import Author, ExternalHost, Settings
 from apps.posts.models import Comment
 from apps.posts.serializers import CommentSerializer
 from apps.core.serializers import AuthorSerializer
 import requests
 from base64 import b64encode
+from django.shortcuts import render
 
 class Utils():
     @staticmethod
@@ -24,20 +25,28 @@ class Utils():
         return JSONRenderer().render(data, media)
 
     @staticmethod
-    def getUrlHost(url: str):
-        res = search('^(?P<scheme>.*)://(?P<host>[^/]*)', url)
+    def getUrlHost(url: str, replaceLocal: bool = True):
+        res = search('^(?P<scheme>[^:]*)://(?P<host>[^/]*)', url)
         if (res and res.group and res.group('scheme') and res.group('host')):
             scheme = res.group('scheme')
             host = res.group('host')
-            res2 = search('^127.0.0.1:(?P<port>.*)', host)
-            if (res2 and res2.group and res2.group('port')):
-                host = "localhost:" + res2.group('port')
+            if (replaceLocal):
+                res2 = search('^127.0.0.1:(?P<port>.*)', host)
+                if (res2 and res2.group and res2.group('port')):
+                    host = "localhost:" + res2.group('port')
             return scheme + "://" + host
         return None
 
     @staticmethod
     def getRequestHost(request: HttpRequest):
         return request.scheme + "://" + request.get_host()
+
+    @staticmethod
+    def isLocalId(id, host):
+        id_host = Utils.getUrlHost(id)
+        if (id_host and Utils.areSameHost(id_host, host)):
+            return True
+        return False
 
     @staticmethod
     def areSameHost(host1, host2):
@@ -80,7 +89,17 @@ class Utils():
                 return serializer.data
         except Author.DoesNotExist:
             if (allowExternal):
-                return Utils.getFromUrl(author_id)
+                response = Utils.getFromUrl(author_id)
+                if (response.__contains__("data")):
+                    if (hasattr(response["data"], '__len__') and len(response["data"]) > 0):
+                        response = response["data"][0]
+                    else:
+                        response = response["data"]
+
+                if (response.__contains__("url")):
+                    response["id"] = response["url"]
+
+                return response
         raise Http404()
 
     # Helper function with error checking to get Author object from id
@@ -121,7 +140,7 @@ class Utils():
         """ 
         Returns an id of a proper post entity, None otherwise
         """
-        res = search('post(s?)/(?P<id>[^/]*)(/)?$', url)
+        res = search('post(s?)/(?P<id>[^/]*)(/(.*))?$', url)
         if (res and res.group and res.group('id')):
             return res.group('id')
         return None
@@ -131,7 +150,7 @@ class Utils():
         """ 
         Returns an id of a proper comment entity, None otherwise
         """
-        res = search('comment(s?)/(?P<id>[^/]*)(/)?$', url)
+        res = search('comment(s?)/(?P<id>[^/]*)/?$', url)
         if (res and res.group and res.group('id')):
             return res.group('id')
         return None
@@ -148,7 +167,7 @@ class Utils():
     
     @staticmethod
     def getFromUrl(url:str) -> Response:
-        host = Utils.getUrlHost(url)
+        host = Utils.getUrlHost(url, False)
         try:
             externalHost = ExternalHost.objects.get(host__startswith=host)
         except:
@@ -164,16 +183,18 @@ class Utils():
             else:
                 response = requests.get(url)
 
-            if (response.status_code != 200):
+            if (response.status_code < 200 or response.status_code > 299):
                 raise Http404()
-            return response.json()
+            try:
+                return response.json()
+            except:
+                return response.text
             
         raise Http404()
-    
-    
+
     @staticmethod
-    def postToUrl(url:str, data) -> Response:
-        host = Utils.getUrlHost(url)
+    def deleteFromUrl(url:str) -> Response:
+        host = Utils.getUrlHost(url, False)
         try:
             externalHost = ExternalHost.objects.get(host__startswith=host)
         except:
@@ -182,16 +203,46 @@ class Utils():
         response = None
         if (externalHost):
             if externalHost.username and externalHost.password:
-                response = requests.post(url, data=data, auth=HTTPBasicAuth(username=externalHost.username, password=externalHost.password))
+                response = requests.delete(url, auth=HTTPBasicAuth(username=externalHost.username, password=externalHost.password))
             elif externalHost.token:
                 headers = { 'Authorization' : 'Basic %s' %  externalHost.token }
-                response = requests.post(url, data=data, headers=headers)
+                response = requests.delete(url, headers=headers)
             else:
-                response = requests.post(url, data=data)
+                response = requests.delete(url)
 
-            if (response.status_code != 200):
+            if (response.status_code < 200 or response.status_code > 299):
                 raise Http404()
-            return response.json()
+            try:
+                return response.json()
+            except:
+                return response.text
+            
+        raise Http404()
+    
+    @staticmethod
+    def postToUrl(url:str, data: dict) -> Response:
+        host = Utils.getUrlHost(url, False)
+        try:
+            externalHost = ExternalHost.objects.get(host__startswith=host)
+        except:
+            raise Http404()
+        
+        response = None
+        if (externalHost):
+            if externalHost.username and externalHost.password:
+                response = requests.post(url, json=data, auth=HTTPBasicAuth(username=externalHost.username, password=externalHost.password))
+            elif externalHost.token:
+                headers = { 'Authorization' : 'Basic %s' %  externalHost.token }
+                response = requests.post(url, json=data, headers=headers)
+            else:
+                response = requests.post(url, json=data)
+
+            if (response.status_code < 200 or response.status_code > 299):
+                raise Http404()
+            try:
+                return response.json()
+            except:
+                return response.text
             
         raise Http404()
 
@@ -212,3 +263,23 @@ class Utils():
             
 
         return json_result
+
+    @staticmethod
+    def requiresApproval():
+        try: 
+            return Settings.objects.get(pk="RequireApproval").value == "True"
+        except:
+            return False
+
+    @staticmethod
+    def allowsSignUp():
+        try: 
+            return Settings.objects.get(pk="AllowSignUp").value == "True"
+        except:
+            return False
+
+    def defaultRender(request: HttpRequest, template_name, context = {}):
+        context['allowSignUp'] = Utils.allowsSignUp()
+        context['requireApproval'] = Utils.requiresApproval()
+        context['is_staff'] = False if request.user.is_anonymous else request.user.is_staff 
+        return render(request, template_name, context)
