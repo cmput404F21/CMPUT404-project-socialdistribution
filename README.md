@@ -6,6 +6,9 @@ See project.org (plain-text/org-mode) for a description of the project.
 
 Make a distributed social network!
 
+Demo: 
+https://youtu.be/n_0UYYGaa8E
+
 CMPUT404F21L802 Members:
 
     Ayabdall
